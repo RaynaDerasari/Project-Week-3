@@ -11,7 +11,7 @@ float ki_value = 0.01;
 float kd_value = 0.5;
 
 // Threshold for sensor sum
-int threshold = 50; // adjust based on your sensors
+int threshold = 10;
 
 // Sensor readings and PID variables
 float sensor_left_val = 0;
@@ -22,6 +22,9 @@ float current_error, cumulative_error, prev_error = 0;
 void setup() {
   pinMode(motor_left, OUTPUT);
   pinMode(motor_right, OUTPUT);
+
+  Serial.begin(9600);
+  Serial.println("---- PID Line Follower Debug Start ----");
 }
 
 void loop() {
@@ -29,31 +32,56 @@ void loop() {
   sensor_left_val = analogRead(sensor_left);
   sensor_right_val = analogRead(sensor_right);
 
-  // Stop motors if sensor sum is below threshold
-  if ((sensor_left_val + sensor_right_val) < threshold) {
+  // Print sensor values
+  Serial.print("L: ");
+  Serial.print(sensor_left_val);
+  Serial.print(" | R: ");
+  Serial.print(sensor_right_val);
+
+  // Threshold check
+  int sensor_sum = sensor_left_val + sensor_right_val;
+  Serial.print(" | Sum: ");
+  Serial.print(sensor_sum);
+
+  if (sensor_sum < threshold) {
+    Serial.println(" | STOP (below threshold)");
+
     analogWrite(motor_left, 0);
     analogWrite(motor_right, 0);
-    return; // skip PID
+    return;
   }
 
   // Compute PID
   float pid_signal = compute_pid(sensor_left_val, sensor_right_val);
 
-  // Constrain PWM to valid range (0-255)
+  // Print PID info
+  Serial.print(" | Error: ");
+  Serial.print(current_error);
+  Serial.print(" | PID: ");
+  Serial.print(pid_signal);
+
+  // Motor outputs (no base speed)
   int pwm_left = constrain(pid_signal, 0, 255);
   int pwm_right = constrain(-pid_signal, 0, 255);
+
+  Serial.print(" | PWM_L: ");
+  Serial.print(pwm_left);
+  Serial.print(" | PWM_R: ");
+  Serial.print(pwm_right);
+
+  Serial.println(); // new line
 
   // Drive motors
   analogWrite(motor_left, pwm_left);
   analogWrite(motor_right, pwm_right);
 
-  delay(10);
+  delay(50); // slow down output as needed so you can read it
 }
 
-// PID computation function
+// PID function
 float compute_pid(float left_val, float right_val) {
   unsigned long current_time = millis();
-  float elapsed_time = (float)(current_time - prev_time) / 1000.0; // seconds
+  float elapsed_time = (float)(current_time - prev_time) / 1000.0;
 
   if (elapsed_time <= 0) return 0;
 
@@ -61,7 +89,9 @@ float compute_pid(float left_val, float right_val) {
   cumulative_error += current_error * elapsed_time;
   float rate_error = (current_error - prev_error) / elapsed_time;
 
-  float pid_output = (kp_value * current_error) + (ki_value * cumulative_error) + (kd_value * rate_error);
+  float pid_output = (kp_value * current_error) +
+                     (ki_value * cumulative_error) +
+                     (kd_value * rate_error);
 
   prev_error = current_error;
   prev_time = current_time;
