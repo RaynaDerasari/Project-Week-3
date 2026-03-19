@@ -10,8 +10,8 @@ float kp_value = 2.0;
 float ki_value = 0.01;
 float kd_value = 0.5;
 
-// Base speed
-int base_speed = 180;
+// Threshold for sensor sum
+int threshold = 50; // adjust based on your sensors
 
 // Sensor readings and PID variables
 float sensor_left_val = 0;
@@ -25,24 +25,33 @@ void setup() {
 }
 
 void loop() {
+  // Read sensors
   sensor_left_val = analogRead(sensor_left);
   sensor_right_val = analogRead(sensor_right);
 
-  float pid_signal = calc_pid(sensor_left_val, sensor_right_val);
+  // Stop motors if sensor sum is below threshold
+  if ((sensor_left_val + sensor_right_val) < threshold) {
+    analogWrite(motor_left, 0);
+    analogWrite(motor_right, 0);
+    return; // skip PID
+  }
 
-  int pwm_left = base_speed + pid_signal;
-  int pwm_right = base_speed - pid_signal;
+  // Compute PID
+  float pid_signal = compute_pid(sensor_left_val, sensor_right_val);
 
-  pwm_left = constrain(pwm_left, 0, 255);
-  pwm_right = constrain(pwm_right, 0, 255);
+  // Constrain PWM to valid range (0-255)
+  int pwm_left = constrain(pid_signal, 0, 255);
+  int pwm_right = constrain(-pid_signal, 0, 255);
 
+  // Drive motors
   analogWrite(motor_left, pwm_left);
   analogWrite(motor_right, pwm_right);
 
   delay(10);
 }
 
-float calc_pid(float left_val, float right_val) {
+// PID computation function
+float compute_pid(float left_val, float right_val) {
   unsigned long current_time = millis();
   float elapsed_time = (float)(current_time - prev_time) / 1000.0; // seconds
 
