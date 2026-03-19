@@ -7,8 +7,8 @@
 
 // PID constants
 float kp_value = 2.0;
-float ki_value = 0.01;
-float kd_value = 0.5;
+float ki_value = 0.05;
+float kd_value = 1.5;
 
 // Threshold for sensor sum
 int threshold = 10;
@@ -24,7 +24,7 @@ void setup() {
   pinMode(motor_right, OUTPUT);
 
   Serial.begin(9600);
-  Serial.println("---- PID Line Follower Debug Start ----");
+  Serial.println("---- Debugging Lines ----");
 }
 
 void loop() {
