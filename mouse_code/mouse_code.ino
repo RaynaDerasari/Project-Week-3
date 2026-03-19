@@ -22,9 +22,6 @@ float current_error, cumulative_error, prev_error = 0;
 void setup() {
   pinMode(motor_left, OUTPUT);
   pinMode(motor_right, OUTPUT);
-
-  Serial.begin(9600);
-  Serial.println("---- Debugging Lines ----");
 }
 
 void loop() {
@@ -32,20 +29,9 @@ void loop() {
   sensor_left_val = analogRead(sensor_left);
   sensor_right_val = analogRead(sensor_right);
 
-  // Print sensor values
-  Serial.print("L: ");
-  Serial.print(sensor_left_val);
-  Serial.print(" | R: ");
-  Serial.print(sensor_right_val);
-
-  // Threshold check
+  // Stop motors if sensors below threshold
   int sensor_sum = sensor_left_val + sensor_right_val;
-  Serial.print(" | Sum: ");
-  Serial.print(sensor_sum);
-
   if (sensor_sum < threshold) {
-    Serial.println(" | STOP (below threshold)");
-
     analogWrite(motor_left, 0);
     analogWrite(motor_right, 0);
     return;
@@ -54,28 +40,15 @@ void loop() {
   // Compute PID
   float pid_signal = compute_pid(sensor_left_val, sensor_right_val);
 
-  // Print PID info
-  Serial.print(" | Error: ");
-  Serial.print(current_error);
-  Serial.print(" | PID: ");
-  Serial.print(pid_signal);
-
   // Motor outputs (no base speed)
   int pwm_left = constrain(pid_signal, 0, 255);
   int pwm_right = constrain(-pid_signal, 0, 255);
-
-  Serial.print(" | PWM_L: ");
-  Serial.print(pwm_left);
-  Serial.print(" | PWM_R: ");
-  Serial.print(pwm_right);
-
-  Serial.println(); // new line
 
   // Drive motors
   analogWrite(motor_left, pwm_left);
   analogWrite(motor_right, pwm_right);
 
-  delay(50); // slow down output as needed so you can read it
+  delay(10); // small delay for stability
 }
 
 // PID function
